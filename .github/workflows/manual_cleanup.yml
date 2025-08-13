@@ -12,6 +12,7 @@ on:
           - dev
           - staging
           - prod
+
 permissions:
   id-token: write
   contents: read
@@ -28,31 +29,31 @@ jobs:
         
       - id: set-env
         run: |
+          # Set environment based on the input or branch
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-          echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-          echo "environment=prod" >> $GITHUB_OUTPUT
+            echo "environment=prod" >> $GITHUB_OUTPUT
           else
-          echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "environment=dev" >> $GITHUB_OUTPUT
           fi
-                        
+          
       - id: read-vars
         run: |
-          # Determine environment to use
+          # Extract project_name and aws_region from terraform.tfvars
           ENV="${{ steps.set-env.outputs.environment }}"
           echo "Using environment: $ENV"
             
-          # Extract project_name and aws_region from terraform.tfvars
           if [ -f "environments/$ENV/terraform.tfvars" ]; then
-          PROJECT_NAME=$(grep project_name environments/$ENV/terraform.tfvars | cut -d '=' -f2 | tr -d ' "')
-          AWS_REGION=$(grep aws_region environments/$ENV/terraform.tfvars | cut -d '=' -f2 | tr -d ' "')
+            PROJECT_NAME=$(grep project_name environments/$ENV/terraform.tfvars | cut -d '=' -f2 | tr -d ' "')
+            AWS_REGION=$(grep aws_region environments/$ENV/terraform.tfvars | cut -d '=' -f2 | tr -d ' "')
           else
-          echo "Warning: terraform.tfvars file not found for environment $ENV"
+            echo "Warning: terraform.tfvars file not found for environment $ENV"
           fi
             
           echo "project_name=$PROJECT_NAME" >> $GITHUB_OUTPUT
           echo "aws_region=$AWS_REGION" >> $GITHUB_OUTPUT
-                    
+
   cleanup:
     runs-on: ubuntu-latest
     needs: [determine_environment]
@@ -72,7 +73,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ needs.determine_environment.outputs.aws_region }}
       
-      - name: Install jq
+      - name: Install jq (for JSON parsing)
         run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Ensure AWS CLI is available
@@ -83,5 +84,15 @@ jobs:
         run: chmod +x ./scripts/cleanup.sh
 
       - name: Run AWS Cleanup Script
-        run: ./scripts/cleanup.sh
+        run: |
+          ./scripts/cleanup.sh
         timeout-minutes: 30  # Allow more time for cleanup to complete
+
+      - name: Handle Errors and Output
+        run: |
+          if [ $? -ne 0 ]; then
+            echo "Error occurred during cleanup script execution."
+            exit 1
+          else
+            echo "Cleanup completed successfully."
+          fi
