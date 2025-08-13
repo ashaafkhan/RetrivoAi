@@ -1,4 +1,3 @@
-"""Test cases for the query_processor Lambda function."""
 import json
 import os
 import unittest
@@ -241,8 +240,7 @@ class TestQueryProcessor(unittest.TestCase):
         self.assertEqual(response_body["stage"], "test")
 
     def test_handler_missing_query(self):
-        """Test the Lambda handler when the query is missing."""
-        # Create an event with missing query
+        """Test the Lambda handler when the query is missing.""" 
         event = {
             "body": json.dumps({
                 "user_id": "user-1",
@@ -263,10 +261,8 @@ class TestQueryProcessor(unittest.TestCase):
     @patch("query_processor.query_processor.generate_response")
     def test_handler_query_success(self, mock_generate, mock_search, mock_embed):
         """Test the Lambda handler for a successful query."""
-        # Mock embedding
         mock_embed.return_value = [0.1, 0.2, 0.3]
         
-        # Mock similarity search results
         mock_chunks = [
             {
                 "chunk_id": "chunk-1",
@@ -280,10 +276,8 @@ class TestQueryProcessor(unittest.TestCase):
         ]
         mock_search.return_value = mock_chunks
         
-        # Mock response generation
         mock_generate.return_value = "RAG stands for Retrieval-Augmented Generation. It combines retrieval and generation techniques."
         
-        # Create a query event
         event = {
             "body": json.dumps({
                 "query": "What is RAG?",
@@ -292,10 +286,8 @@ class TestQueryProcessor(unittest.TestCase):
             })
         }
 
-        # Call the handler
         response = handler(event, {})
 
-        # Verify results
         self.assertEqual(response["statusCode"], 200)
         response_body = json.loads(response["body"])
         self.assertEqual(response_body["query"], "What is RAG?")
@@ -303,7 +295,6 @@ class TestQueryProcessor(unittest.TestCase):
         self.assertEqual(len(response_body["results"]), 1)
         self.assertEqual(response_body["count"], 1)
         
-        # Verify function calls
         mock_embed.assert_called_once_with("What is RAG?")
         mock_search.assert_called_once_with([0.1, 0.2, 0.3], "user-1")
         mock_generate.assert_called_once_with("gemini-2.0-flash", "What is RAG?", mock_chunks)
@@ -311,10 +302,8 @@ class TestQueryProcessor(unittest.TestCase):
     @patch("query_processor.query_processor.embed_query")
     def test_handler_error_handling(self, mock_embed):
         """Test the Lambda handler error handling."""
-        # Mock embedding to raise an exception
         mock_embed.side_effect = Exception("Error embedding query")
         
-        # Create a query event
         event = {
             "body": json.dumps({
                 "query": "What is RAG?",
@@ -323,10 +312,8 @@ class TestQueryProcessor(unittest.TestCase):
             })
         }
 
-        # Call the handler
         response = handler(event, {})
 
-        # Verify results
         self.assertEqual(response["statusCode"], 500)
         response_body = json.loads(response["body"])
         self.assertTrue("Internal error" in response_body["message"])
