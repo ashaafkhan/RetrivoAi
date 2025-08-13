@@ -19,7 +19,7 @@ lambda_timeout     = 150
 # GitHub Repository Settings
 # -------------------------
 github_repo   = "ashaafkhan/RetrivoAi"
-github_branch = "master"
+github_branch = "main"
 
 # -------------------------
 # Monitoring
